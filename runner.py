@@ -2,8 +2,7 @@ import argparse
 import json
 import os
 import pandas as pd
-import numpy as np
-import pickle
+import train
 
 
 class Runner(object):
@@ -15,6 +14,10 @@ class Runner(object):
         self.load_data()
         self.train_params = self.build_params()
 
+    def run(self):
+        fad = train.FAD(self.train_params)
+        fad.train()
+
     def get_parser(self):
         parser = argparse.ArgumentParser(description='Run FAD experiments')
         parser.add_argument('config', help='JSON config filename')
@@ -23,11 +26,14 @@ class Runner(object):
     def unpack_config(self, config_file):
         mypath = os.path.abspath(os.path.dirname(__file__))
         config = json.load(open(os.path.join(mypath, config_file), 'r'))
+        print(config)
+        self.logpath = os.path.join(mypath, config_file[:-5] + '.csv')
         self.Xtrain_file = os.path.join(mypath, config['Xtrain'])
         self.ytrain_file = os.path.join(mypath, config['ytrain'])
         self.Xtest_file = os.path.join(mypath, config['Xtest'])
         self.ytest_file = os.path.join(mypath, config['ytest'])
-        self.method = os.path.join(mypath, config['method'])
+        self.method = config['method']
+        self.hyperparams = config['hyperparams']
 
     def load_data(self):
         self.Xtrain = pd.read_pickle(self.Xtrain_file)
@@ -42,7 +48,11 @@ class Runner(object):
         params['Xtest'] = self.Xtest
         params['ytest'] = self.ytest
         params['method'] = self.method
+        params['hyperparams'] = self.hyperparams
+        params['logpath'] = self.logpath
+        return params
 
 
 if __name__ == '__main__':
     runner = Runner()
+    runner.run()

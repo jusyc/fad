@@ -1,7 +1,13 @@
 {
   "Xtrain": "data/adult/X_train.pkl",
-  "ytrain": "data/adult/y_train.pkl",
   "Xtest": "data/adult/X_test.pkl",
+  "ytrain": "data/adult/y_train.pkl",
   "ytest": "data/adult/y_test.pkl",
-  "method": "basic"
+  "method": "basic",
+  "hyperparams": {
+    "learning_rate": 1e-4,
+    "num_iters": 1000,
+    "n_h": 10,
+    "dropout_rate": 0.5
+  }
 }
