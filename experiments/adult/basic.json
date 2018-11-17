@@ -1,0 +1,7 @@
+{
+  "Xtrain": "data/adult/X_train.pkl",
+  "ytrain": "data/adult/y_train.pkl",
+  "Xtest": "data/adult/X_test.pkl",
+  "ytest": "data/adult/y_test.pkl",
+  "method": "basic"
+}
