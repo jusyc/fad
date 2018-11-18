@@ -10,6 +10,7 @@ class Model(object):
         self.params = params
         self.method = self.params['method']
         self.adversarial = self.method != 'basic'
+        self.logpath = self.params['logpath']
         self.hyperparams = self.params['hyperparams']
         self.model = self.build_model()
         self.data = self.process_data()
@@ -85,42 +86,64 @@ class Model(object):
             ztrain = self.data['ztrain']
             ztest = self.data['ztest']
 
+        model.train()
+
+        # Set up logging
+        logfile = self.logpath + '-training'
+        modelfile = self.logpath + '-model.pth'
+        if self.adversarial:
+            advfile = self.logpath + '-adv.pth'
+        writer = SummaryWriter(logfile)
+
         for t in range(self.hyperparams['num_iters']):
             # Forward step
             ypred_train = model(Xtrain)
             loss_train = loss_fn(ypred_train, ytrain)
 
-            # ypred_test = model(Xtest)
-            # loss_test = loss_fn(ypred_test, ytest)
+            ypred_test = model(Xtest)
+            loss_test = loss_fn(ypred_test, ytest)
 
             if self.adversarial:
                 if self.method == 'parity':
                     adv_input_train = ypred_train
-                    # adv_input_test = ypred_test
+                    adv_input_test = ypred_test
                 elif self.method == 'odds':
                     adv_input_train = torch.cat((ypred_train, ytrain), 1)
-                    # adv_input_test = torch.cat((ypred_test, ytest), 1)
+                    adv_input_test = torch.cat((ypred_test, ytest), 1)
 
                 zpred_train = adv_model(adv_input_train)
                 adv_loss_train = adv_loss_fn(zpred_train, ztrain)
 
-                # zpred_test = adv_model(adv_input_test)
-                # adv_loss_test = adv_loss_fn(zpred_test, ztest)
+                zpred_test = adv_model(adv_input_test)
+                adv_loss_test = adv_loss_fn(zpred_test, ztest)
 
                 combined_loss_train = loss_train - self.hyperparams['alpha'] * adv_loss_train
+                combined_loss_test = loss_test - self.hyperparams['alpha'] * adv_loss_test
 
-                # combined_loss_test = loss_test - self.hyperparams['alpha'] * adv_loss_test
-
-            # Output
+            # Train log
             if t % 100 == 0:
                 print('Iteration: {}'.format(t))
                 if self.adversarial:
                     print('Predictor train loss: {:.4f}'.format(loss_train))
                     print('Adversary train loss: {:.4f}'.format(adv_loss_train))
                     print('Combined train loss:  {:.4f}'.format(combined_loss_train))
+
+                    write_log(writer, 'pred_loss_train', loss_train, t)
+                    write_log(writer, 'pred_loss_test', loss_test, t)
+                    write_log(writer, 'adv_loss_train', adv_loss_train, t)
+                    write_log(writer, 'adv_loss_test', adv_loss_test, t)
+                    write_log(writer, 'combined_loss_train', combined_loss_train, t)
+                    write_log(writer, 'combined_loss_test', combined_loss_test, t)
                 else:
                     print('Train loss: {:.4f}'.format(loss_train))
-                # print('Test loss: {}'.format(loss_test))
+
+                    write_log(writer, 'loss_train', loss_train, t)
+                    write_log(writer, 'loss_test', loss_test, t)
+            # Save model
+            if t > 0 and t % 10000 == 0:
+                torch.save(model, modelfile)
+                if self.adversarial:
+                    torch.save(adv_model, advfile)
 
             # Backward step
             if self.adversarial:
@@ -130,6 +153,12 @@ class Model(object):
 
             optimizer.step()
             optimizer.zero_grad()
+
+        # save final model
+        torch.save(model, modelfile)
+        if self.adversarial:
+            torch.save(adv_model, advfile)
+        writer.close()
 
     def eval(self):
         model = self.model['model']
@@ -147,6 +176,15 @@ class Model(object):
             ztest = self.data['ztest']
 
         model.eval()
+
+        evalfile = self.logpath + '-eval.csv'
+
         ypred_test = model(Xtest)
         loss_test = loss_fn(ypred_test, ytest)
         print('Test loss {}'.format(loss_test))
+
+        #TODO: Create dictionary of evaluation results/metrics and save to evalfile.
+
+
+def write_log(writer, key, loss, iter):
+    writer.add_scalar(key, loss.item(), iter)

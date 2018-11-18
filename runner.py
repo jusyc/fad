@@ -29,7 +29,7 @@ class Runner(object):
         mypath = os.path.abspath(os.path.dirname(__file__))
         config = json.load(open(os.path.join(mypath, config_file), 'r'))
         print(config)
-        self.logpath = os.path.join(mypath, config_file[:-5] + '.csv')
+        self.logpath = os.path.join(mypath, config_file[:-5].replace('experiments', 'logs'))
         self.Xtrain_file = os.path.join(mypath, config['Xtrain'])
         self.ytrain_file = os.path.join(mypath, config['ytrain'])
         self.Xtest_file = os.path.join(mypath, config['Xtest'])
