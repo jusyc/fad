@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import torch
+import metrics
 from torch.autograd import Variable
 from tensorboardX import SummaryWriter
 
@@ -139,6 +140,20 @@ class Model(object):
 
                     write_log(writer, 'loss_train', loss_train, t)
                     write_log(writer, 'loss_test', loss_test, t)
+                
+                print('Train metrics:')
+                train_pm = metrics.get_performance_metrics(ypred_train.data.numpy(), ytrain.data.numpy())
+                write_log_array(writer, 'performance_metrics_train', train_pm, t)
+                if self.adversarial:
+                    train_fm = metrics.get_fairness_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy()) 
+                    write_log_array(writer, 'fairness_metrics_train', train_fm, t)
+                print('Test fairness metrics:')
+                test_pm = metrics.get_performance_metrics(ypred_test.data.numpy(), ytest.data.numpy())
+                write_log_array(writer, 'performance_metrics_test', test_pm, t)
+                if self.adversarial:
+                    test_fm = metrics.get_fairness_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy())
+                    write_log_array(writer, 'fairness_metrics_test', test_fm, t)
+
             # Save model
             if t > 0 and t % 10000 == 0:
                 torch.save(model, modelfile)
@@ -184,7 +199,15 @@ class Model(object):
         print('Test loss {}'.format(loss_test))
 
         #TODO: Create dictionary of evaluation results/metrics and save to evalfile.
-
+        writer = SummaryWriter(evalfile)
+        test_pm = metrics.get_performance_metrics(ypred_test.data.numpy(), ytest.data.numpy())
+        write_log_array(writer, 'performance_metrics_test', test_pm, t)
+        if self.adversarial:
+            test_fm = metrics.get_fairness_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy())
+            write_log_array(writer, 'fairness_metrics_test', test_fm, t)
 
 def write_log(writer, key, loss, iter):
     writer.add_scalar(key, loss.item(), iter)
+
+def write_log_array(writer, key, array, iter):
+    writer.add_text(key, np.array_str(array), iter)
