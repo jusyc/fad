@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 import torch
-import metrics
+from metrics import get_metrics
 from torch.autograd import Variable
 from tensorboardX import SummaryWriter
+import pprint
 
 
 class Model(object):
@@ -65,9 +66,8 @@ class Model(object):
         data['ytrain'] = Variable(torch.tensor(self.params['ytrain'].values.reshape(m, 1)).float())
         data['Xtest'] = Variable(torch.tensor(self.params['Xtest'].values).float())
         data['ytest'] = Variable(torch.tensor(self.params['ytest'].values.reshape(m_test, 1)).float())
-        if self.adversarial:
-            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m, 1)).float())
-            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test, 1)).float())
+        data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m, 1)).float())
+        data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test, 1)).float())
 
         return data
 
@@ -80,17 +80,19 @@ class Model(object):
         Xtest = self.data['Xtest']
         ytrain = self.data['ytrain']
         ytest = self.data['ytest']
+        ztrain = self.data['ztrain']
+        ztest = self.data['ztest']
         if self.adversarial:
             adv_model = self.model['adv_model']
             adv_loss_fn = self.model['adv_loss_fn']
             adv_optimizer = self.model['adv_optimizer']
-            ztrain = self.data['ztrain']
-            ztest = self.data['ztest']
 
         model.train()
 
         # Set up logging
         logfile = self.logpath + '-training'
+        metrics_file = self.logpath + '-metrics.csv'
+        metrics = []
         modelfile = self.logpath + '-model.pth'
         if self.adversarial:
             advfile = self.logpath + '-adv.pth'
@@ -140,19 +142,13 @@ class Model(object):
 
                     write_log(writer, 'loss_train', loss_train, t)
                     write_log(writer, 'loss_test', loss_test, t)
-                
-                print('Train metrics:')
-                train_pm = metrics.get_performance_metrics(ypred_train.data.numpy(), ytrain.data.numpy())
-                write_log_array(writer, 'performance_metrics_train', train_pm, t)
-                if self.adversarial:
-                    train_fm = metrics.get_fairness_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy()) 
-                    write_log_array(writer, 'fairness_metrics_train', train_fm, t)
-                print('Test fairness metrics:')
-                test_pm = metrics.get_performance_metrics(ypred_test.data.numpy(), ytest.data.numpy())
-                write_log_array(writer, 'performance_metrics_test', test_pm, t)
-                if self.adversarial:
-                    test_fm = metrics.get_fairness_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy())
-                    write_log_array(writer, 'fairness_metrics_test', test_fm, t)
+
+                # print('Train metrics:')
+                # metrics_train = metrics.get_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy())
+                print('Test metrics:')
+                metrics_test = get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy())
+                pprint.pprint(metrics_test)
+                metrics.append(metrics_test)
 
             # Save model
             if t > 0 and t % 10000 == 0:
@@ -175,6 +171,9 @@ class Model(object):
             torch.save(adv_model, advfile)
         writer.close()
 
+        metrics = pd.DataFrame(metrics)
+        metrics.to_csv(metrics_file)
+
     def eval(self):
         model = self.model['model']
         loss_fn = self.model['loss_fn']
@@ -183,31 +182,30 @@ class Model(object):
         Xtest = self.data['Xtest']
         ytrain = self.data['ytrain']
         ytest = self.data['ytest']
+        ztrain = self.data['ztrain']
+        ztest = self.data['ztest']
         if self.adversarial:
             adv_model = self.model['adv_model']
             adv_loss_fn = self.model['adv_loss_fn']
             adv_optimizer = self.model['adv_optimizer']
-            ztrain = self.data['ztrain']
-            ztest = self.data['ztest']
-
-        model.eval()
 
         evalfile = self.logpath + '-eval.csv'
 
-        ypred_test = model(Xtest)
-        loss_test = loss_fn(ypred_test, ytest)
-        print('Test loss {}'.format(loss_test))
+        model.eval()
 
-        #TODO: Create dictionary of evaluation results/metrics and save to evalfile.
-        writer = SummaryWriter(evalfile)
-        test_pm = metrics.get_performance_metrics(ypred_test.data.numpy(), ytest.data.numpy())
-        write_log_array(writer, 'performance_metrics_test', test_pm, t)
-        if self.adversarial:
-            test_fm = metrics.get_fairness_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy())
-            write_log_array(writer, 'fairness_metrics_test', test_fm, t)
+        ypred_test = model(Xtest)
+
+        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy()), index=[0])
+        print
+        print('Final test metrics')
+        pprint.pprint(metrics_test)
+        metrics_test.to_csv(evalfile)
+
+
 
 def write_log(writer, key, loss, iter):
     writer.add_scalar(key, loss.item(), iter)
+
 
 def write_log_array(writer, key, array, iter):
     writer.add_text(key, np.array_str(array), iter)

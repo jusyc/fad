@@ -3,11 +3,13 @@
   "Xtest": "data/adult/X_test.pkl",
   "ytrain": "data/adult/y_train.pkl",
   "ytest": "data/adult/y_test.pkl",
+  "ztrain": "data/adult/sex_train.pkl",
+  "ztest": "data/adult/sex_test.pkl",
   "method": "basic",
   "hyperparams": {
     "learning_rate": 1e-2,
-    "num_iters": 10000,
+    "num_iters": 2000,
     "n_h": 10,
-    "dropout_rate": 0.1
+    "dropout_rate": 0.5
   }
 }
