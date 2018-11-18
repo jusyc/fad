@@ -12,6 +12,6 @@
     "n_h": 10,
     "n_h_adv": 4,
     "dropout_rate": 0.5,
-    "alpha": 1
+    "alpha": 100
   }
 }

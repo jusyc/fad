@@ -18,14 +18,14 @@ def demographic_parity_gap(y_pred, z, y_select):
 
 def false_positive_gap(y_pred, y, z):
     m = len(y_pred)
-    fp_0 = sum(1 for i in range(m) if (z[i] == 0 and predict(y_pred[i] > y[i])))/(m-sum(z[i] for i in range(m)))
-    fp_1 = sum(1 for i in range(m) if (z[i] == 1 and predict(y_pred[i] > y[i])))/sum(z[i] for i in range(m))
+    fp_0 = sum(1 for i in range(m) if (z[i] == 0 and predict(y_pred[i]) > y[i]))/(m-sum(z[i] for i in range(m)))
+    fp_1 = sum(1 for i in range(m) if (z[i] == 1 and predict(y_pred[i]) > y[i]))/sum(z[i] for i in range(m))
     return np.abs(fp_0[0] - fp_1[0])
 
 def false_negative_gap(y_pred, y, z):
     m = len(y_pred)
-    fn_0 = sum(1 for i in range(m) if (z[i] == 0 and predict(y_pred[i] < y[i])))/(m-sum(z[i] for i in range(m)))
-    fn_1 = sum(1 for i in range(m) if (z[i] == 1 and predict(y_pred[i] < y[i])))/sum(z[i] for i in range(m))
+    fn_0 = sum(1 for i in range(m) if (z[i] == 0 and predict(y_pred[i]) < y[i]))/(m-sum(z[i] for i in range(m)))
+    fn_1 = sum(1 for i in range(m) if (z[i] == 1 and predict(y_pred[i]) < y[i]))/sum(z[i] for i in range(m))
     return np.abs(fn_0[0] - fn_1[0])
     
 # 2 - METRICS FROM ZHANG PAPER (somewhat redundant, but coded again for simplicity)
