@@ -21,12 +21,26 @@ class Model(object):
         self.model = self.build_model()
         self.data = self.process_data()
 
+    def valid_hyperparam(self, i):
+        return (i < 3 or i == 4 or self.adversarial)
+
     def get_indexes(self):
-        num_models = [range(len(self.hyperparams[HYPERPARAMS[i]])) for i in range(len(HYPERPARAMS))]
+        num_models = []
+        for i in range(len(HYPERPARAMS)):
+            if self.valid_hyperparam(i):
+                num_models.append(range(len(self.hyperparams[HYPERPARAMS[i]])))
+            else:
+                num_models.append([None]) # placeholder value if no such hyperparameter
         return itertools.product(*num_models)
 
     def get_hyperparams(self, indexes):
-        return [self.hyperparams[HYPERPARAMS[i]][indexes[i]] for i in range(len(indexes))]
+        hyperparams = []
+        for i in range(len(indexes)):
+            if self.valid_hyperparam(i):
+                hyperparams.append(self.hyperparams[HYPERPARAMS[i]][indexes[i]])
+            else:
+                hyperparams.append(None)
+        return hyperparams
 
 
     def hyperparams_to_string(self, indexes):
@@ -34,7 +48,8 @@ class Model(object):
         for i in range(len(HYPERPARAMS)):
             if i > 0:
                 res += '-'
-            res += HYPERPARAMS[i] + '_' + str(self.hyperparams[HYPERPARAMS[i]][indexes[i]])
+            if self.valid_hyperparam(i):
+                res += HYPERPARAMS[i] + '_' + str(self.hyperparams[HYPERPARAMS[i]][indexes[i]])
         return res
 
     def build_model(self):
