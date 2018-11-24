@@ -2,9 +2,16 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
+# static constants
+HYPERPARAMS = ['learning_rate', 'total_num_iters', 'n_h', 'n_h_adv', 'dropout_rate', 'alpha']
 
-def get_metrics(y_pred, y, z, y_select = 0):
+def get_metrics(y_pred, y, z, hyperparams, y_select = 0):
     metrics = dict()
+
+    # add hyperparameters for experiment
+    for i in range(len(hyperparams)):
+        metrics[HYPERPARAMS[i]] = hyperparams[i]
+
     metrics['accuracy'] = get_accuracy(y_pred, y)
     metrics['roc_auc'] = roc_auc_score(y, y_pred)
     metrics['count_0'] = np.sum(z == 0)
