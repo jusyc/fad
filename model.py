@@ -16,6 +16,7 @@ class Model(object):
         self.params = params
         self.method = self.params['method']
         self.adversarial = self.method != 'basic'
+        self.num_classes = self.params['num_classes']
         self.logpath = self.params['logpath']
         self.hyperparams = self.params['hyperparams']
         self.model = self.build_model()
@@ -199,9 +200,9 @@ class Model(object):
                     write_log(writer, 'loss_test', loss_test, t)
 
                 # print('Train metrics:')
-                # metrics_train = metrics.get_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy())
+                # metrics_train = metrics.get_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy(), self.num_classes)
                 print('Test metrics:')
-                metrics_test = get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes))
+                metrics_test = get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes)
                 pprint.pprint(metrics_test)
                 metrics.append(metrics_test)
 
@@ -254,7 +255,7 @@ class Model(object):
  
         model.eval()
         ypred_test = model(Xtest)
-        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes)), index=[0])
+        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes), index=[0])
         print
         print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ':')
         pprint.pprint(metrics_test)

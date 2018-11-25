@@ -37,6 +37,7 @@ class Runner(object):
         self.ztest_file = os.path.join(mypath, config['ztest'])
         self.method = config['method']
         self.hyperparams = config['hyperparams']
+        self.num_classes = config['num_classes']
 
     def load_data(self):
         self.Xtrain = pd.read_pickle(self.Xtrain_file)
@@ -54,6 +55,7 @@ class Runner(object):
         params['ytest'] = self.ytest
         params['method'] = self.method
         params['hyperparams'] = self.hyperparams
+        params['num_classes'] = self.num_classes
         params['logpath'] = self.logpath
         params['ztrain'] = self.ztrain
         params['ztest'] = self.ztest

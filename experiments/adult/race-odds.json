@@ -6,6 +6,7 @@
   "ztrain": "data/adult/race_train.pkl",
   "ztest": "data/adult/race_test.pkl",
   "method": "odds",
+  "num_classes": 5,
   "hyperparams": {
     "learning_rate": [1e-4],
     "num_iters": [10000],
