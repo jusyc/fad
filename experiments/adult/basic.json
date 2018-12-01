@@ -8,9 +8,11 @@
   "method": "basic",
   "num_classes": 2,
   "hyperparams": {
-    "learning_rate": [1e-4, 1e-2],
-    "num_iters": [1000],
-    "n_h": [10],
-    "dropout_rate": [0.5]
+    "learning_rate": [1e-4, 1e-3, 1e-2, 1e-1, 1],
+    "num_iters": [4000],
+    "n_h": [10, 100, 1000],
+    "n_h_adv": [10, 100, 1000],
+    "dropout_rate": [0.1, 0.25, 0.5],
+    "alpha": [0, 0.01, 0.1, 0.5, 1, 1.5, 5, 10]
   }
 }

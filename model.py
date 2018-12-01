@@ -78,6 +78,10 @@ class Model(object):
 
         if self.adversarial:
             n_h_adv = self.hyperparams['n_h_adv'][indexes[3]]
+            if self.num_classes > 2:
+                n_h_out = self.num_classes
+            else:
+                n_h_out = 1 
 
             if self.method == 'parity':
                 n_adv = 1
@@ -90,7 +94,7 @@ class Model(object):
                 torch.nn.Linear(n_adv, n_h_adv),
                 torch.nn.ReLU(),
                 torch.nn.Dropout(self.hyperparams['dropout_rate'][indexes[4]]),
-                torch.nn.Linear(n_h_adv, self.num_classes),
+	        torch.nn.Linear(n_h_adv, n_h_out),
                 torch.nn.Sigmoid(),
             )
             if (self.num_classes > 2):
@@ -111,8 +115,12 @@ class Model(object):
         data['ytrain'] = Variable(torch.tensor(self.params['ytrain'].values.reshape(m, 1)).float())
         data['Xtest'] = Variable(torch.tensor(self.params['Xtest'].values).float())
         data['ytest'] = Variable(torch.tensor(self.params['ytest'].values.reshape(m_test, 1)).float())
-        data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).long())
-        data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).long())
+        if self.num_classes > 2:
+            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).long())
+            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).long())
+        else:
+            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).float())
+            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).float())
 
         return data
 
