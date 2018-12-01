@@ -90,10 +90,13 @@ class Model(object):
                 torch.nn.Linear(n_adv, n_h_adv),
                 torch.nn.ReLU(),
                 torch.nn.Dropout(self.hyperparams['dropout_rate'][indexes[4]]),
-                torch.nn.Linear(n_h_adv, 1),
+                torch.nn.Linear(n_h_adv, self.num_classes),
                 torch.nn.Sigmoid(),
             )
-            model['adv_loss_fn'] = torch.nn.BCELoss(size_average=True)
+            if (self.num_classes > 2):
+                model['adv_loss_fn'] = torch.nn.CrossEntropyLoss(size_average=True)
+            else:
+                model['adv_loss_fn'] = torch.nn.BCELoss(size_average=True)
             model['adv_optimizer'] = torch.optim.Adam(model['adv_model'].parameters(), lr=self.hyperparams['learning_rate'][indexes[0]])
 
         return model
@@ -108,8 +111,8 @@ class Model(object):
         data['ytrain'] = Variable(torch.tensor(self.params['ytrain'].values.reshape(m, 1)).float())
         data['Xtest'] = Variable(torch.tensor(self.params['Xtest'].values).float())
         data['ytest'] = Variable(torch.tensor(self.params['ytest'].values.reshape(m_test, 1)).float())
-        data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m, 1)).float())
-        data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test, 1)).float())
+        data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).long())
+        data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).long())
 
         return data
 
