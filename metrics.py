@@ -21,14 +21,19 @@ def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0):
     # fairness metrics
     for i in range(k):
         metrics['count_' + str(i)] = np.sum(z == i)
+        metrics['y_hat_' + str(i)] = np.sum(pred[z == i] == y_select)/np.sum(z == i)
         metrics['accuracy_' + str(i)] = get_accuracy(pred[z == i], y[z == i]) # WATCH OUT - DOESN'T COUNT INSTANCES WHERE PREDICT i BUT ISN'T ACTUALLY i
         metrics['true_neg_' + str(i)], metrics['false_neg_' + str(i)], metrics['false_pos_' + str(i)], metrics['true_pos_' + str(i)]  = \
         confusion_matrix(pred[z == i], y[z == i])
-        metrics['parity_gap_' + str(i)] = demographic_parity_gap(pred, z, i, y_select) # |prop(i) - prop(not(i))| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
+        metrics['fp_' + str(i)] = metrics['false_pos_' + str(i)] / (metrics['false_pos_' + str(i)] + metrics['true_neg_' + str(i)])
+        metrics['fn_' + str(i)] = metrics['false_neg_' + str(i)] / (metrics['false_neg_' + str(i)] + metrics['true_pos_' + str(i)])
+        metrics['calibration_' + str(i)] = np.sum((pred == 1) & (z == i) & (y == 1))/np.sum((pred == 1) & (z == i)) # p(y | pred, z)
 
     for i in range(k):
-        metrics['fp_gap' + str(i)] = false_positive_gap(metrics, i, k) # |fp_k - fp_not_k| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
-        metrics['fn_gap' + str(i)] = false_negative_gap(metrics, i, k) # |fn_k - fn_not_k| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
+        metrics['parity_gap_' + str(i)] = demographic_parity_gap(pred, z, i, y_select) # |prop(i) - prop(not(i))| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
+        metrics['fp_gap_' + str(i)] = false_positive_gap(metrics, i, k) # |fp_k - fp_not_k| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
+        metrics['fn_gap_' + str(i)] = false_negative_gap(metrics, i, k) # |fn_k - fn_not_k| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
+        metrics['calibration_gap_' + str(i)] = calibration_gap(metrics, i, k)
 
     return metrics
 
@@ -75,6 +80,11 @@ def false_negative_gap(metrics, k, num_k):
 
     fn_not = fn_not_num/fn_not_denom
     return np.abs(fn_k - fn_not)
+
+def calibration_gap(metrics, k, num_k):
+    cal_k = metrics['calibration_' + str(k)]
+    cal_not = np.mean([metrics['calibration_' + str(i)] for i in range(num_k) if (i != k)])
+    return np.abs(cal_k - cal_not)
 
 
 # 2 - METRICS FROM ZHANG PAPER (somewhat redundant, but coded again for simplicity)
