@@ -20,6 +20,7 @@ def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0):
 
     # fairness metrics
     for i in range(k):
+        metrics['conditional_roc_auc_' + str(i)] = roc_auc_score(y[z == i], y_pred[z == i])
         metrics['count_' + str(i)] = np.sum(z == i)
         metrics['y_hat_' + str(i)] = np.sum(pred[z == i] == y_select)/np.sum(z == i)
         metrics['accuracy_' + str(i)] = get_accuracy(pred[z == i], y[z == i]) # WATCH OUT - DOESN'T COUNT INSTANCES WHERE PREDICT i BUT ISN'T ACTUALLY i
