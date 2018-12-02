@@ -212,9 +212,9 @@ class Model(object):
 
                 # print('Train metrics:')
                 # metrics_train = metrics.get_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy(), self.num_classes)
-                print('Test metrics:')
+                #print('Test metrics:')
                 metrics_test = get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes)
-                pprint.pprint(metrics_test)
+                #pprint.pprint(metrics_test)
                 metrics.append(metrics_test)
 
             # Save model
