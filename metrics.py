@@ -19,12 +19,12 @@ def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0, evaluation_file 
     pred = predict(y_pred)
     metrics['accuracy'] = get_accuracy(pred, y)
     metrics['roc_auc'] = roc_auc_score(y, y_pred) # CAN TAKE IN ARRAYS?
-    metrics['roc_curve_fpr'], metrics['roc_curve_tpr'], metrics['roc_curve_thresholds'] = roc_curve(y, y_pred, pos_label=1)
+    # metrics['roc_curve_fpr'], metrics['roc_curve_tpr'], metrics['roc_curve_thresholds'] = roc_curve(y, y_pred, pos_label=1)
 
     # fairness metrics
     for i in range(k):
-        metrics['conditional_roc_auc_' + str(i)] = roc_auc_score(y[z == i], y_pred[z == i])
-        metrics['conditional_roc_curve_fpr'], metrics['conditional_roc_curve_tpr'], metrics['conditional_roc_curve_thresholds'] = \
+        # metrics['conditional_roc_auc_' + str(i)] = roc_auc_score(y[z == i], y_pred[z == i])
+        # metrics['conditional_roc_curve_fpr'], metrics['conditional_roc_curve_tpr'], metrics['conditional_roc_curve_thresholds'] = \
         roc_curve(y[z == i], y_pred[z == i], pos_label=1)
         metrics['count_' + str(i)] = np.sum(z == i)
         metrics['y_hat_' + str(i)] = np.sum(pred[z == i] == y_select)/np.sum(z == i)
@@ -46,7 +46,7 @@ def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0, evaluation_file 
     return metrics
 
 
-def predict(prob):   
+def predict(prob):
     return prob >= 0.5
 
 
