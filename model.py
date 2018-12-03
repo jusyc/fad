@@ -10,6 +10,7 @@ import pprint
 
 # static constants
 HYPERPARAMS = ['learning_rate', 'num_iters', 'n_h', 'n_h_adv', 'dropout_rate', 'alpha']
+intermediate_metrics = False
 
 class Model(object):
     def __init__(self, params):
@@ -63,6 +64,7 @@ class Model(object):
         model = dict()
 
         m, n = self.params['Xtrain'].shape
+        m_valid, n_valid = self.params['Xvalid'].shape
         m_test, n_test = self.params['Xtest'].shape
         n_h = self.hyperparams['n_h'][indexes[2]]
 
@@ -94,7 +96,7 @@ class Model(object):
                 torch.nn.Linear(n_adv, n_h_adv),
                 torch.nn.ReLU(),
                 torch.nn.Dropout(self.hyperparams['dropout_rate'][indexes[4]]),
-	        torch.nn.Linear(n_h_adv, n_h_out),
+	            torch.nn.Linear(n_h_adv, n_h_out),
                 torch.nn.Sigmoid(),
             )
             if (self.num_classes > 2):
@@ -108,18 +110,23 @@ class Model(object):
     def process_data(self):
         data = dict()
         m, n = self.params['Xtrain'].shape
+        m_valid, n_valid = self.params['Xvalid'].shape
         m_test, n_test = self.params['Xtest'].shape
         n_h = self.hyperparams['n_h']
 
         data['Xtrain'] = Variable(torch.tensor(self.params['Xtrain'].values).float())
         data['ytrain'] = Variable(torch.tensor(self.params['ytrain'].values.reshape(m, 1)).float())
+        data['Xvalid'] = Variable(torch.tensor(self.params['Xvalid'].values).float())
+        data['yvalid'] = Variable(torch.tensor(self.params['yvalid'].values.reshape(m_valid,1)).float())
         data['Xtest'] = Variable(torch.tensor(self.params['Xtest'].values).float())
         data['ytest'] = Variable(torch.tensor(self.params['ytest'].values.reshape(m_test, 1)).float())
         if self.num_classes > 2:
             data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).long())
+            data['zvalid'] = Variable(torch.tensor(self.params['zvalid'].values.reshape(m_valid,)).long())
             data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).long())
         else:
             data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).float())
+            data['zvalid'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m_valid,)).float())
             data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).float())
 
         return data
@@ -138,10 +145,13 @@ class Model(object):
         loss_fn = self.model[indexes]['loss_fn']
         optimizer = self.model[indexes]['optimizer']
         Xtrain = self.data['Xtrain']
+        Xvalid = self.data['Xvalid']
         Xtest = self.data['Xtest']
         ytrain = self.data['ytrain']
+        yvalid = self.data['yvalid']
         ytest = self.data['ytest']
         ztrain = self.data['ztrain']
+        zvalid = self.data['zvalid']
         ztest = self.data['ztest']
         if self.adversarial:
             adv_model = self.model[indexes]['adv_model']
@@ -170,24 +180,33 @@ class Model(object):
             ypred_train = model(Xtrain)
             loss_train = loss_fn(ypred_train, ytrain)
 
+            ypred_valid = model(Xvalid)
+            loss_valid = loss_fn(ypred_valid, yvalid)
+
             ypred_test = model(Xtest)
             loss_test = loss_fn(ypred_test, ytest)
 
             if self.adversarial:
                 if self.method == 'parity':
                     adv_input_train = ypred_train
+                    adv_input_valid = ypred_valid
                     adv_input_test = ypred_test
                 elif self.method == 'odds':
                     adv_input_train = torch.cat((ypred_train, ytrain), 1)
+                    adv_input_valid = torch.cat((ypred_valid, yvalid), 1)
                     adv_input_test = torch.cat((ypred_test, ytest), 1)
 
                 zpred_train = adv_model(adv_input_train)
                 adv_loss_train = adv_loss_fn(zpred_train, ztrain)
 
+                zpred_test = adv_model(adv_input_train)
+                adv_loss_function = adv_loss_fn(zpred_valid, zvalid)
+
                 zpred_test = adv_model(adv_input_test)
                 adv_loss_test = adv_loss_fn(zpred_test, ztest)
 
                 combined_loss_train = loss_train - self.hyperparams['alpha'][indexes[5]] * adv_loss_train
+                combined_loss_valid = loss_valid -self.hyperparams['alpha'][indexes[5]] * adv_loss_train
                 combined_loss_test = loss_test - self.hyperparams['alpha'][indexes[5]] * adv_loss_test
 
             # Train log
@@ -199,23 +218,28 @@ class Model(object):
                     print('Combined train loss:  {:.4f}'.format(combined_loss_train))
 
                     write_log(writer, 'pred_loss_train', loss_train, t)
+                    write_log(writer, 'pred_loss_valid', loss_valid, t)
                     write_log(writer, 'pred_loss_test', loss_test, t)
                     write_log(writer, 'adv_loss_train', adv_loss_train, t)
+                    write_log(writer, 'adv_loss_valid', adv_loss_valid, t)
                     write_log(writer, 'adv_loss_test', adv_loss_test, t)
                     write_log(writer, 'combined_loss_train', combined_loss_train, t)
+                    write_log(writer, 'combined_loss_valid', combined_loss_valid, t)
                     write_log(writer, 'combined_loss_test', combined_loss_test, t)
                 else:
                     print('Train loss: {:.4f}'.format(loss_train))
 
                     write_log(writer, 'loss_train', loss_train, t)
+                    write_log(writer, 'loss_valid', loss_valid, t)
                     write_log(writer, 'loss_test', loss_test, t)
 
                 # print('Train metrics:')
                 # metrics_train = metrics.get_metrics(ypred_train.data.numpy(), ytrain.data.numpy(), ztrain.data.numpy(), self.num_classes)
-                #print('Test metrics:')
-                metrics_test = get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes)
-                #pprint.pprint(metrics_test)
-                metrics.append(metrics_test)
+                if (intermediate_metrics):
+                    print('Validation metrics:')
+                    metrics_valid = get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), self.num_classes, 'valid_set')
+                    pprint.pprint(metrics_valid)
+                    metrics.append(metrics_valid) # -- NO LONGER COMPUTING INTERMEDIATE METRICS
 
             # Save model
             if t > 0 and t % 10000 == 0:
@@ -238,8 +262,9 @@ class Model(object):
             torch.save(adv_model, advfile)
         writer.close()
 
-        metrics = pd.DataFrame(metrics)
-        metrics.to_csv(metrics_file)
+        if (intermediate_metrics):
+            metrics = pd.DataFrame(metrics)
+            metrics.to_csv(metrics_file)
 
     def eval(self):
         evalfile = self.logpath + '-eval.csv'
@@ -254,10 +279,13 @@ class Model(object):
         loss_fn = self.model[indexes]['loss_fn']
         optimizer = self.model[indexes]['optimizer']
         Xtrain = self.data['Xtrain']
+        Xvalid = self.data['Xvalid']
         Xtest = self.data['Xtest']
         ytrain = self.data['ytrain']
+        yvalid = self.data['yvalid']
         ytest = self.data['ytest']
         ztrain = self.data['ztrain']
+        zvalid = self.data['zvalid']
         ztest = self.data['ztest']
         if self.adversarial:
             adv_model = self.model[indexes]['adv_model']
@@ -265,12 +293,18 @@ class Model(object):
             adv_optimizer = self.model[indexes]['adv_optimizer']
  
         model.eval()
-        ypred_test = model(Xtest)
-        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes), index=[0])
+        ypred_valid = model(Xvalid)
+        metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), self.num_classes, 'valid_set'), index=[0])
         print
-        print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ':')
+        print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ' on validation:')
+        pprint.pprint(metrics_valid)
+
+        ypred_test = model(Xtest)
+        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes, 'test_set'), index=[0])
+        print
+        print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ' on test:')
         pprint.pprint(metrics_test)
-        return metrics_test
+        return pd.concat([metrics_valid, metrics_test])
 
 
 

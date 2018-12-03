@@ -31,9 +31,12 @@ class Runner(object):
         self.logpath = os.path.join(mypath, config_file[:-5].replace('experiments', 'logs'))
         self.Xtrain_file = os.path.join(mypath, config['Xtrain'])
         self.ytrain_file = os.path.join(mypath, config['ytrain'])
+        self.Xvalid_file = os.path.join(mypath, config['Xvalid'])
+        self.yvalid_file = os.path.join(mypath, config['yvalid'])
         self.Xtest_file = os.path.join(mypath, config['Xtest'])
         self.ytest_file = os.path.join(mypath, config['ytest'])
         self.ztrain_file = os.path.join(mypath, config['ztrain'])
+        self.zvalid_file = os.path.join(mypath, config['vzalid'])
         self.ztest_file = os.path.join(mypath, config['ztest'])
         self.method = config['method']
         self.hyperparams = config['hyperparams']
@@ -42,15 +45,20 @@ class Runner(object):
     def load_data(self):
         self.Xtrain = pd.read_pickle(self.Xtrain_file)
         self.ytrain = pd.read_pickle(self.ytrain_file)
+        self.Xvalid = pd.read_pickle(self.Xvalid_file)
+        self.yvalid = pd.read_pickle(self.yvalid_file)
         self.Xtest = pd.read_pickle(self.Xtest_file)
         self.ytest = pd.read_pickle(self.ytest_file)
         self.ztrain = pd.read_pickle(self.ztrain_file)
+        self.zvalid = pd.read_pickle(self.zvalid_file)
         self.ztest = pd.read_pickle(self.ztest_file)
 
     def build_params(self):
         params = dict()
         params['Xtrain'] = self.Xtrain
         params['ytrain'] = self.ytrain
+        params['Xvalid'] = self.Xvalid
+        params['yvalid'] = self.yvalid
         params['Xtest'] = self.Xtest
         params['ytest'] = self.ytest
         params['method'] = self.method
@@ -58,6 +66,7 @@ class Runner(object):
         params['num_classes'] = self.num_classes
         params['logpath'] = self.logpath
         params['ztrain'] = self.ztrain
+        params['zvalid'] = self.zvalid
         params['ztest'] = self.ztest
         return params
 

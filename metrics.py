@@ -7,8 +7,9 @@ from sklearn.metrics import roc_curve
 HYPERPARAMS = ['learning_rate', 'total_num_iters', 'n_h', 'n_h_adv', 'dropout_rate', 'alpha']
 
 # k gives the number of classes the protected variable can take on
-def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0):
+def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0, evaluation_file = None):
     metrics = dict()
+    metrics['evaluation_file'] = evaluation_file
 
     # add hyperparameters for experiment
     for i in range(len(hyperparams)):
@@ -41,6 +42,7 @@ def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0):
         metrics['fn_gap_' + str(i)] = false_negative_gap(metrics, i, k) # |fn_k - fn_not_k| -- MAY BE INTERESTING TO REMOVE ABS VALUE HERE
         metrics['calibration_pos_gap_' + str(i)] = calibration_gap(metrics, i, k, 1)
         metrics['calibration_neg_gap_' + str(i)] = calibration_gap(metrics, i, k, 0)
+
     return metrics
 
 
