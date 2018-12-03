@@ -44,7 +44,6 @@ class Model(object):
                 hyperparams.append(None)
         return hyperparams
 
-
     def hyperparams_to_string(self, indexes):
         res = ''
         for i in range(len(HYPERPARAMS)):
@@ -83,7 +82,7 @@ class Model(object):
             if self.num_classes > 2:
                 n_h_out = self.num_classes
             else:
-                n_h_out = 1 
+                n_h_out = 1
 
             if self.method == 'parity':
                 n_adv = 1
@@ -134,6 +133,12 @@ class Model(object):
     def train(self):
         for indexes in self.get_indexes():
             self.train_single_model(indexes)
+
+    def load_trained_models(self):
+        for indexes in self.get_indexes():
+            hyperparam_values = self.hyperparams_to_string(indexes)
+            modelfile = self.logpath + '-model/' + hyperparam_values + '-model.pth'
+            self.model[indexes]['model'] = torch.load(modelfile)
 
     def create_dir(self, dirname):
         if (not os.path.exists(dirname)):
@@ -280,8 +285,8 @@ class Model(object):
 
     def eval_single_model(self, indexes):
         model = self.model[indexes]['model']
-        loss_fn = self.model[indexes]['loss_fn']
-        optimizer = self.model[indexes]['optimizer']
+        # loss_fn = self.model[indexes]['loss_fn']
+        # optimizer = self.model[indexes]['optimizer']
         Xtrain = self.data['Xtrain']
         Xvalid = self.data['Xvalid']
         Xtest = self.data['Xtest']
@@ -293,18 +298,18 @@ class Model(object):
         ztest = self.data['ztest']
         if self.adversarial:
             adv_model = self.model[indexes]['adv_model']
-            adv_loss_fn = self.model[indexes]['adv_loss_fn']
-            adv_optimizer = self.model[indexes]['adv_optimizer']
- 
+            # adv_loss_fn = self.model[indexes]['adv_loss_fn']
+            # adv_optimizer = self.model[indexes]['adv_optimizer']
+
         model.eval()
         ypred_valid = model(Xvalid)
-        metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), self.num_classes, 'valid_set'), index=[0])
+        metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set'), index=[0])
         print
         print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ' on validation:')
         pprint.pprint(metrics_valid)
 
         ypred_test = model(Xtest)
-        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), self.num_classes, 'test_set'), index=[0])
+        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set'), index=[0])
         print
         print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ' on test:')
         pprint.pprint(metrics_test)

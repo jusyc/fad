@@ -10,18 +10,23 @@ class Runner(object):
     def __init__(self):
         args = self.get_parser().parse_args()
         config_file = args.config
+        self.evalonly = args.evalonly
         self.unpack_config(config_file)
         self.load_data()
         self.train_params = self.build_params()
 
     def run(self):
         model = Model(self.train_params)
-        model.train()
+        if self.evalonly:
+            model.load_trained_models()
+        else:
+            model.train()
         model.eval()
 
     def get_parser(self):
         parser = argparse.ArgumentParser(description='Run FAD experiments')
         parser.add_argument('config', help='JSON config filename')
+        parser.add_argument('--evalonly', action='store_true', help='Do not train models, just load and evaluate.')
         return parser
 
     def unpack_config(self, config_file):
