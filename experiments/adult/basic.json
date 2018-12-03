@@ -1,9 +1,12 @@
 {
   "Xtrain": "data/adult/X_train.pkl",
+  "Xvalid": "data/adult/X_valid.pkl",
   "Xtest": "data/adult/X_test.pkl",
   "ytrain": "data/adult/y_train.pkl",
+  "yvalid": "data/adult/y_valid.pkl",
   "ytest": "data/adult/y_test.pkl",
   "ztrain": "data/adult/sex_train.pkl",
+  "zvalid": "data/adult/sex_valid.pkl",
   "ztest": "data/adult/sex_test.pkl",
   "method": "basic",
   "num_classes": 2,

@@ -1,9 +1,12 @@
 {
   "Xtrain": "data/adult/X_train.pkl",
+  "Xvalid": "data/adult/X_valid.pkl",
   "Xtest": "data/adult/X_test.pkl",
   "ytrain": "data/adult/y_train.pkl",
+  "yvalid": "data/adult/y_valid.pkl",
   "ytest": "data/adult/y_test.pkl",
   "ztrain": "data/adult/race_train.pkl",
+  "zvalid": "data/adult/race_valid.pkl",
   "ztest": "data/adult/race_test.pkl",
   "method": "parity",
   "num_classes": 5,
