@@ -36,7 +36,7 @@ class Runner(object):
         self.Xtest_file = os.path.join(mypath, config['Xtest'])
         self.ytest_file = os.path.join(mypath, config['ytest'])
         self.ztrain_file = os.path.join(mypath, config['ztrain'])
-        self.zvalid_file = os.path.join(mypath, config['vzalid'])
+        self.zvalid_file = os.path.join(mypath, config['zvalid'])
         self.ztest_file = os.path.join(mypath, config['ztest'])
         self.method = config['method']
         self.hyperparams = config['hyperparams']

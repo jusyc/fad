@@ -126,7 +126,7 @@ class Model(object):
             data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).long())
         else:
             data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).float())
-            data['zvalid'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m_valid,)).float())
+            data['zvalid'] = Variable(torch.tensor(self.params['zvalid'].values.reshape(m_valid,)).float())
             data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).float())
 
         return data
@@ -199,8 +199,8 @@ class Model(object):
                 zpred_train = adv_model(adv_input_train)
                 adv_loss_train = adv_loss_fn(zpred_train, ztrain)
 
-                zpred_test = adv_model(adv_input_train)
-                adv_loss_function = adv_loss_fn(zpred_valid, zvalid)
+                zpred_valid = adv_model(adv_input_valid)
+                adv_loss_valid = adv_loss_fn(zpred_valid, zvalid)
 
                 zpred_test = adv_model(adv_input_test)
                 adv_loss_test = adv_loss_fn(zpred_test, ztest)
@@ -214,8 +214,11 @@ class Model(object):
                 print('Iteration: {}'.format(t))
                 if self.adversarial:
                     print('Predictor train loss: {:.4f}'.format(loss_train))
+                    print('Predictor valid loss: {:.4f}'.format(loss_train))
                     print('Adversary train loss: {:.4f}'.format(adv_loss_train))
+                    print('Adversary valid loss: {:.4f}'.format(adv_loss_valid))
                     print('Combined train loss:  {:.4f}'.format(combined_loss_train))
+                    print('Combined valid loss:  {:.4f}'.format(combined_loss_valid))
 
                     write_log(writer, 'pred_loss_train', loss_train, t)
                     write_log(writer, 'pred_loss_valid', loss_valid, t)
@@ -228,6 +231,7 @@ class Model(object):
                     write_log(writer, 'combined_loss_test', combined_loss_test, t)
                 else:
                     print('Train loss: {:.4f}'.format(loss_train))
+                    print('Valid loss: {:.4f}'.format(loss_valid))
 
                     write_log(writer, 'loss_train', loss_train, t)
                     write_log(writer, 'loss_valid', loss_valid, t)
