@@ -211,7 +211,7 @@ class Model(object):
                 adv_loss_test = adv_loss_fn(zpred_test, ztest)
 
                 combined_loss_train = loss_train - self.hyperparams['alpha'][indexes[5]] * adv_loss_train
-                combined_loss_valid = loss_valid -self.hyperparams['alpha'][indexes[5]] * adv_loss_train
+                combined_loss_valid = loss_valid - self.hyperparams['alpha'][indexes[5]] * adv_loss_valid
                 combined_loss_test = loss_test - self.hyperparams['alpha'][indexes[5]] * adv_loss_test
 
             # Train log
