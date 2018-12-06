@@ -9,7 +9,7 @@
   "zvalid": "data/adult/age_valid.pkl",
   "ztest": "data/adult/age_test.pkl",
   "method": "parity",
-  "num_classes": 5,
+  "num_classes": 11,
   "hyperparams": {
     "learning_rate": [1e-3],
     "num_iters": [2500],

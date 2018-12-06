@@ -12,10 +12,10 @@
   "num_classes": 2,
   "hyperparams": {
     "learning_rate": [1e-3],
-    "num_iters": [200],
+    "num_iters": [2000, 2500],
     "n_h": [10],
     "n_h_adv": [10],
     "dropout_rate": [0.5],
-    "alpha": [1]
+    "alpha": [10]
   }
 }
