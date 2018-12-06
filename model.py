@@ -258,12 +258,18 @@ class Model(object):
 
             # Backward step
             if self.adversarial:
+                # adv update
+                adv_optimizer.zero_grad()
+                adv_loss_train.backward(retain_graph=True)
+                adv_optimizer.step()
+                # pred update
+                optimizer.zero_grad()
                 combined_loss_train.backward()
             else:
+                optimizer.zero_grad()
                 loss_train.backward()
 
             optimizer.step()
-            optimizer.zero_grad()
 
         # save final model
         torch.save(model, modelfile)
