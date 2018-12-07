@@ -302,20 +302,35 @@ class Model(object):
         ztrain = self.data['ztrain']
         zvalid = self.data['zvalid']
         ztest = self.data['ztest']
-        if self.adversarial:
-            adv_model = self.model[indexes]['adv_model']
-            # adv_loss_fn = self.model[indexes]['adv_loss_fn']
-            # adv_optimizer = self.model[indexes]['adv_optimizer']
 
         model.eval()
         ypred_valid = model(Xvalid)
-        metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set'), index=[0])
+        if self.adversarial:
+            adv_model = self.model[indexes]['adv_model']
+            adv_model.eval()
+
+            if self.method == 'parity':
+                adv_input_valid = ypred_valid
+            elif self.method == 'odds':
+                adv_input_valid = torch.cat((ypred_valid, yvalid), 1)
+            zpred_valid = adv_model(adv_input_valid)
+            metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set', zpred=zpred_valid.data.numpy()), index=[0])
+        else:
+            metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set'), index=[0])
         print
         print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ' on validation:')
         pprint.pprint(metrics_valid)
 
         ypred_test = model(Xtest)
-        metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set'), index=[0])
+        if self.adversarial:
+            if self.method == 'parity':
+                adv_input_test = ypred_test
+            elif self.method == 'odds':
+                adv_input_test = torch.cat((ypred_test, ytest), 1)
+            zpred_test = adv_model(adv_input_test)
+            metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set', zpred=zpred_test.data.numpy()), index=[0])
+        else:
+            metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set'), index=[0])
         print
         print('Final test metrics for model with ' + self.hyperparams_to_string(indexes) + ' on test:')
         pprint.pprint(metrics_test)

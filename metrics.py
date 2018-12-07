@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score, roc_curve, accuracy_score
 
 # static constants
 HYPERPARAMS = ['learning_rate', 'total_num_iters', 'n_h', 'n_h_adv', 'dropout_rate', 'alpha']
 
 # k gives the number of classes the protected variable can take on
-def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0, evaluation_file = None):
+def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0, evaluation_file = None, zpred=None):
     metrics = dict()
     metrics['evaluation_file'] = evaluation_file
 
@@ -18,6 +17,9 @@ def get_metrics(y_pred, y, z, hyperparams, k = 2, y_select = 0, evaluation_file 
     # performance metrics
     pred = predict(y_pred)
     metrics['accuracy'] = get_accuracy(pred, y)
+    if zpred is not None:
+        zpred_label = predict(zpred)
+        metrics['z-accuracy'] = get_accuracy(zpred_label, z)
     metrics['roc_auc'] = roc_auc_score(y, y_pred) # CAN TAKE IN ARRAYS?
     # metrics['roc_curve_fpr'], metrics['roc_curve_tpr'], metrics['roc_curve_thresholds'] = roc_curve(y, y_pred, pos_label=1)
 
