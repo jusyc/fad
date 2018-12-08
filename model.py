@@ -86,7 +86,7 @@ class Model(object):
 
             if self.method == 'parity':
                 n_adv = 1
-            elif self.method == 'odds':
+            elif self.method == 'odds' or 'opportunity':
                 n_adv = 2
             else:
                 raise Exception('Unknown method: {}'.format(self.method))
@@ -113,6 +113,19 @@ class Model(object):
         m_test, n_test = self.params['Xtest'].shape
         n_h = self.hyperparams['n_h']
 
+        if self.method == 'opportunity':
+            data['adv_train_mask'] = self.params['ytrain'] == 1
+            self.params['ztrain'] = self.params['ztrain'][data['adv_train_mask']]
+            data['adv_train_mask'] = torch.ByteTensor(data['adv_train_mask'].astype(int).values.reshape(m, 1))
+
+            data['adv_valid_mask'] = self.params['yvalid'] == 1
+            self.params['zvalid'] = self.params['zvalid'][data['adv_valid_mask']]
+            data['adv_valid_mask'] = torch.ByteTensor(data['adv_valid_mask'].astype(int).values.reshape(m_valid, 1))
+
+            data['adv_test_mask'] = self.params['ytest'] == 1
+            self.params['ztest'] = self.params['ztest'][data['adv_test_mask']]
+            data['adv_test_mask'] = torch.ByteTensor(data['adv_test_mask'].astype(int).values.reshape(m_test, 1))
+
         data['Xtrain'] = Variable(torch.tensor(self.params['Xtrain'].values).float())
         data['ytrain'] = Variable(torch.tensor(self.params['ytrain'].values.reshape(m, 1)).float())
         data['Xvalid'] = Variable(torch.tensor(self.params['Xvalid'].values).float())
@@ -120,13 +133,13 @@ class Model(object):
         data['Xtest'] = Variable(torch.tensor(self.params['Xtest'].values).float())
         data['ytest'] = Variable(torch.tensor(self.params['ytest'].values.reshape(m_test, 1)).float())
         if self.num_classes > 2:
-            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).long())
-            data['zvalid'] = Variable(torch.tensor(self.params['zvalid'].values.reshape(m_valid,)).long())
-            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).long())
+            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(self.params['ztrain'].shape[0],)).long())
+            data['zvalid'] = Variable(torch.tensor(self.params['zvalid'].values.reshape(self.params['zvalid'].shape[0],)).long())
+            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(self.params['ztest'].shape[0],)).long())
         else:
-            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(m,)).float())
-            data['zvalid'] = Variable(torch.tensor(self.params['zvalid'].values.reshape(m_valid,)).float())
-            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(m_test,)).float())
+            data['ztrain'] = Variable(torch.tensor(self.params['ztrain'].values.reshape(self.params['ztrain'].shape[0],)).float())
+            data['zvalid'] = Variable(torch.tensor(self.params['zvalid'].values.reshape(self.params['zvalid'].shape[0],)).float())
+            data['ztest'] = Variable(torch.tensor(self.params['ztest'].values.reshape(self.params['ztest'].shape[0],)).float())
 
         return data
 
@@ -200,6 +213,13 @@ class Model(object):
                     adv_input_train = torch.cat((ypred_train, ytrain), 1)
                     adv_input_valid = torch.cat((ypred_valid, yvalid), 1)
                     adv_input_test = torch.cat((ypred_test, ytest), 1)
+                elif self.method == 'opportunity':
+                    adv_input_train = torch.stack((torch.masked_select(ypred_train, self.data['adv_train_mask']),
+                                                 torch.masked_select(ytrain, self.data['adv_train_mask'])), 1)
+                    adv_input_valid = torch.stack((torch.masked_select(ypred_valid, self.data['adv_valid_mask']),
+                                                 torch.masked_select(yvalid, self.data['adv_valid_mask'])), 1)
+                    adv_input_test = torch.stack((torch.masked_select(ypred_test, self.data['adv_test_mask']),
+                                                torch.masked_select(ytest, self.data['adv_test_mask'])), 1)
 
                 zpred_train = adv_model(adv_input_train)
                 adv_loss_train = adv_loss_fn(zpred_train, ztrain)
@@ -313,6 +333,9 @@ class Model(object):
                 adv_input_valid = ypred_valid
             elif self.method == 'odds':
                 adv_input_valid = torch.cat((ypred_valid, yvalid), 1)
+            elif self.method == 'opportunity':
+                adv_input_valid = torch.cat((torch.masked_select(ypred_valid, self.data['adv_valid_mask']),
+                                             torch.masked_select(yvalid, self.data['adv_valid_mask'])), 1)
             zpred_valid = adv_model(adv_input_valid)
             metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set', zpred=zpred_valid.data.numpy()), index=[0])
         else:
@@ -327,6 +350,9 @@ class Model(object):
                 adv_input_test = ypred_test
             elif self.method == 'odds':
                 adv_input_test = torch.cat((ypred_test, ytest), 1)
+            elif self.method == 'opportunity':
+                adv_input_test = torch.cat((torch.masked_select(ypred_test, self.data['adv_test_mask']),
+                                            torch.masked_select(ytest, self.data['adv_test_mask'])), 1)
             zpred_test = adv_model(adv_input_test)
             metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set', zpred=zpred_test.data.numpy()), index=[0])
         else:
