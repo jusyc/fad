@@ -115,15 +115,12 @@ class Model(object):
 
         if self.method == 'opportunity':
             data['adv_train_mask'] = self.params['ytrain'] == 1
-            self.params['ztrain'] = self.params['ztrain'][data['adv_train_mask']]
             data['adv_train_mask'] = torch.ByteTensor(data['adv_train_mask'].astype(int).values.reshape(m, 1))
 
             data['adv_valid_mask'] = self.params['yvalid'] == 1
-            self.params['zvalid'] = self.params['zvalid'][data['adv_valid_mask']]
             data['adv_valid_mask'] = torch.ByteTensor(data['adv_valid_mask'].astype(int).values.reshape(m_valid, 1))
 
             data['adv_test_mask'] = self.params['ytest'] == 1
-            self.params['ztest'] = self.params['ztest'][data['adv_test_mask']]
             data['adv_test_mask'] = torch.ByteTensor(data['adv_test_mask'].astype(int).values.reshape(m_test, 1))
 
         data['Xtrain'] = Variable(torch.tensor(self.params['Xtrain'].values).float())
@@ -222,13 +219,15 @@ class Model(object):
                                                 torch.masked_select(ytest, self.data['adv_test_mask'])), 1)
 
                 zpred_train = adv_model(adv_input_train)
-                adv_loss_train = adv_loss_fn(zpred_train, ztrain)
+                print(zpred_train.shape)
+                print(ztrain.shape)
+                adv_loss_train = adv_loss_fn(zpred_train, torch.masked_select(ztrain, self.data['adv_train_mask']))
 
                 zpred_valid = adv_model(adv_input_valid)
-                adv_loss_valid = adv_loss_fn(zpred_valid, zvalid)
+                adv_loss_valid = adv_loss_fn(zpred_valid, torch.masked_select(zvalid, self.data['adv_valid_mask']))
 
                 zpred_test = adv_model(adv_input_test)
-                adv_loss_test = adv_loss_fn(zpred_test, ztest)
+                adv_loss_test = adv_loss_fn(zpred_test, torch.masked_select(ztest, self.data['adv_test_mask']))
 
                 combined_loss_train = loss_train - self.hyperparams['alpha'][indexes[5]] * adv_loss_train
                 combined_loss_valid = loss_valid - self.hyperparams['alpha'][indexes[5]] * adv_loss_valid
@@ -325,18 +324,21 @@ class Model(object):
 
         model.eval()
         ypred_valid = model(Xvalid)
+        zpred_valid = None
         if self.adversarial:
             adv_model = self.model[indexes]['adv_model']
             adv_model.eval()
 
             if self.method == 'parity':
                 adv_input_valid = ypred_valid
+                zpred_valid = adv_model(adv_input_valid)
             elif self.method == 'odds':
                 adv_input_valid = torch.cat((ypred_valid, yvalid), 1)
+                zpred_valid = adv_model(adv_input_valid)
             elif self.method == 'opportunity':
-                adv_input_valid = torch.cat((torch.masked_select(ypred_valid, self.data['adv_valid_mask']),
-                                             torch.masked_select(yvalid, self.data['adv_valid_mask'])), 1)
-            zpred_valid = adv_model(adv_input_valid)
+                zpred_valid = None
+
+        if zpred_valid is not None:
             metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set', zpred=zpred_valid.data.numpy()), index=[0])
         else:
             metrics_valid = pd.DataFrame(get_metrics(ypred_valid.data.numpy(), yvalid.data.numpy(), zvalid.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='valid_set'), index=[0])
@@ -345,15 +347,18 @@ class Model(object):
         pprint.pprint(metrics_valid)
 
         ypred_test = model(Xtest)
+        zpred_test = None
         if self.adversarial:
             if self.method == 'parity':
                 adv_input_test = ypred_test
+                zpred_test = adv_model(adv_input_test)
             elif self.method == 'odds':
                 adv_input_test = torch.cat((ypred_test, ytest), 1)
+                zpred_test = adv_model(adv_input_test)
             elif self.method == 'opportunity':
-                adv_input_test = torch.cat((torch.masked_select(ypred_test, self.data['adv_test_mask']),
-                                            torch.masked_select(ytest, self.data['adv_test_mask'])), 1)
-            zpred_test = adv_model(adv_input_test)
+                zpred_test = None
+
+        if zpred_test is not None:
             metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set', zpred=zpred_test.data.numpy()), index=[0])
         else:
             metrics_test = pd.DataFrame(get_metrics(ypred_test.data.numpy(), ytest.data.numpy(), ztest.data.numpy(), self.get_hyperparams(indexes), k=self.num_classes, evaluation_file='test_set'), index=[0])
