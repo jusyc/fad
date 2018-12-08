@@ -1,0 +1,19 @@
+{
+  "Xtrain": "data/adult/X_train.pkl",
+  "Xvalid": "data/adult/X_valid.pkl",
+  "Xtest": "data/adult/X_test.pkl",
+  "ytrain": "data/adult/y_train.pkl",
+  "yvalid": "data/adult/y_valid.pkl",
+  "ytest": "data/adult/y_test.pkl",
+  "ztrain": "data/adult/race_train.pkl",
+  "zvalid": "data/adult/race_valid.pkl",
+  "ztest": "data/adult/race_test.pkl",
+  "method": "basic",
+  "num_classes": 5,
+  "hyperparams": {
+    "learning_rate": [1e-3],
+    "num_iters": [3000],
+    "n_h": [10],
+    "dropout_rate": [0.5]
+  }
+}
